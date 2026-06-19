@@ -62,7 +62,8 @@ exports.handler = async (event) => {
     }
 
     // --- Generate unique order ID ---
-    const orderId = "ORD-" + Date.now();
+    const orderId = "ORD" + Date.now();
+
 
     // --- Build URLs ---
     const successUrl =
