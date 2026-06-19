@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — ZksiPay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #7c3aed;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --bg: #0f0a1e;
+      --bg2: #13102a;
+      --card: #1e1540;
+      --border: rgba(124,58,237,0.2);
+      --text: #f1f0f5;
+      --muted: #9ca3af;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ── */
+    nav {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-size: 1.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .admin-email {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .btn-logout {
+      padding: 8px 18px;
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      border-radius: 8px;
+      font-family: "Inter", sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(239,68,68,0.25); }
+
+    /* ── Main ── */
+    main { padding: 28px; max-width: 1200px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .page-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 28px;
+    }
+
+    /* ── Stats cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px 10px 36px;
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-wrap input:focus { border-color: var(--primary); }
+    .search-wrap input::placeholder { color: var(--muted); }
+
+    select.sort-select {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 0.88rem;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      min-width: 180px;
+    }
+
+    .btn-export {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--success), #34d399);
+      color: #fff;
+      font-family: "Inter", sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.18s, box-shadow 0.18s;
+      box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+    }
+
+    .btn-export:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.5); }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    thead {
+      background: rgba(124,58,237,0.12);
+    }
+
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #c4b5fd;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 13px 16px;
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      vertical-align: middle;
+    }
+
+    tr:hover td { background: rgba(124,58,237,0.05); }
+
+    .badge-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(16,185,129,0.15);
+      color: #34d399;
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    .trx-cell {
+      font-family: "Courier New", monospace;
+      font-size: 0.78rem;
+      color: #a78bfa;
+    }
+
+    .amount-cell { font-weight: 700; color: #34d399; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* ── Loading ── */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 16px; }
+      nav { padding: 12px 16px; }
+      .admin-email { display: none; }
+      .controls { flex-direction: column; }
+      .search-wrap { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav>
+  <div class="nav-logo">⚡ ZksiPay Admin</div>
+  <div class="nav-right">
+    <span class="admin-email" id="adminEmail">—</span>
+    <button class="btn-logout" id="logoutBtn">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <h1>Payment Dashboard</h1>
+  <p class="page-sub">Real-time payment records from Firebase</p>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Payments</div>
+      <div class="stat-value" id="statCount">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Collected</div>
+      <div class="stat-value" id="statAmount">—</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search by name, number, TRX ID…" />
+    </div>
+    <select class="sort-select" id="sortSelect">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="amount_high">Amount: High → Low</option>
+      <option value="amount_low">Amount: Low → High</option>
+    </select>
+    <button class="btn-export" id="exportBtn">⬇ Export CSV</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="loading" id="loadingState">Loading payments…</div>
+    <table id="paymentsTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Amount</th>
+          <th>TRX ID</th>
+          <th>Method</th>
+          <th>Date / Time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="icon">📭</div>
+      <div>No payments found.</div>
+    </div>
+  </div>
+</main>
+
+<!-- Firebase CDN -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signOut,
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getDatabase,
+    ref,
+    onValue,
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyANqq2iqr_JDMUDA27ShTllLFPlwX3Ip2A",
+    authDomain: "my-webh.firebaseapp.com",
+    projectId: "my-webh",
+    storageBucket: "my-webh.firebasestorage.app",
+    messagingSenderId: "460800280339",
+    appId: "1:460800280339:web:a418205bebb27765ee3ce6",
+    databaseURL: "https://my-webh-default-rtdb.firebaseio.com", // update if different
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getDatabase(app);
+
+  let allPayments = []; // raw data cache
+
+  // ── Auth guard ──
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = '/admin/login.html';
+      return;
+    }
+    document.getElementById('adminEmail').textContent = user.email;
+    loadPayments();
+  });
+
+  // ── Logout ──
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    window.location.href = '/admin/login.html';
+  });
+
+  // ── Escape HTML (XSS prevention) ──
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── Format date ──
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleString('en-BD', {
+        year: 'numeric', month: 'short', day: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch { return iso; }
+  }
+
+  // ── Load payments (real-time) ──
+  function loadPayments() {
+    const paymentsRef = ref(db, 'payments');
+
+    onValue(paymentsRef, (snapshot) => {
+      document.getElementById('loadingState').style.display = 'none';
+
+      const data = snapshot.val();
+      if (!data) {
+        allPayments = [];
+        renderTable([]);
+        return;
+      }
+
+      // Convert object to array
+      allPayments = Object.entries(data).map(([key, val]) => ({ _key: key, ...val }));
+      applyFilters();
+    });
+  }
+
+  // ── Apply search + sort ──
+  function applyFilters() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const sort  = document.getElementById('sortSelect').value;
+
+    let filtered = allPayments.filter(p => {
+      const haystack = [p.name, p.number, p.trxId, p.invoiceId].join(' ').toLowerCase();
+      return haystack.includes(query);
+    });
+
+    filtered.sort((a, b) => {
+      if (sort === 'newest')      return new Date(b.timestamp) - new Date(a.timestamp);
+      if (sort === 'oldest')      return new Date(a.timestamp) - new Date(b.timestamp);
+      if (sort === 'amount_high') return (b.amount || 0) - (a.amount || 0);
+      if (sort === 'amount_low')  return (a.amount || 0) - (b.amount || 0);
+      return 0;
+    });
+
+    renderTable(filtered);
+  }
+
+  // ── Render table ──
+  function renderTable(payments) {
+    const table      = document.getElementById('paymentsTable');
+    const tbody      = document.getElementById('tableBody');
+    const emptyState = document.getElementById('emptyState');
+
+    if (payments.length === 0) {
+      table.style.display = 'none';
+      emptyState.style.display = 'block';
+    } else {
+      table.style.display = 'table';
+      emptyState.style.display = 'none';
+    }
+
+    // Stats
+    const total  = payments.length;
+    const sumAmt = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+    document.getElementById('statCount').textContent  = total;
+    document.getElementById('statAmount').textContent = '৳' + sumAmt.toFixed(2);
+
+    // Rows
+    tbody.innerHTML = payments.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(p.name)}</td>
+        <td>${esc(p.number)}</td>
+        <td class="amount-cell">৳${parseFloat(p.amount || 0).toFixed(2)}</td>
+        <td class="trx-cell">${esc(p.trxId)}</td>
+        <td>${esc(p.paymentMethod || '—')}</td>
+        <td>${fmtDate(p.timestamp)}</td>
+        <td><span class="badge-status">${esc(p.status || 'COMPLETED')}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── Search & sort listeners ──
+  document.getElementById('searchInput').addEventListener('input', applyFilters);
+  document.getElementById('sortSelect').addEventListener('change', applyFilters);
+
+  // ── Export CSV ──
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (allPayments.length === 0) return alert('No data to export.');
+
+    const headers = ['#', 'Name', 'Number', 'Amount', 'TRX ID', 'Method', 'Date/Time', 'Status'];
+    const rows = allPayments.map((p, i) => [
+      i + 1,
+      `"${(p.name || '').replace(/"/g, '""')}"`,
+      `"${(p.number || '').replace(/"/g, '""')}"`,
+      p.amount || 0,
+      `"${(p.trxId || '').replace(/"/g, '""')}"`,
+      p.paymentMethod || '',
+      p.timestamp || '',
+      p.status || 'COMPLETED',
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `payments-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>

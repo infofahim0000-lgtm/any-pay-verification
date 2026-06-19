@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pay Instant — Secure Payment Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* ── Design Tokens ── */
+    :root {
+      --primary: #7c3aed;
+      --primary-dark: #5b21b6;
+      --primary-light: #ede9fe;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bkash: #e2136e;
+      --nagad: #f05a28;
+      --rocket: #8b1fa9;
+      --bg: #0f0a1e;
+      --bg2: #1a1035;
+      --card: #1e1540;
+      --border: rgba(124, 58, 237, 0.25);
+      --text: #f1f0f5;
+      --muted: #9ca3af;
+      --radius: 16px;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Animated background ── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(6,182,212,0.12) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Navbar ── */
+    nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      background: rgba(15, 10, 30, 0.7);
+    }
+
+    .nav-logo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-badge {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 50px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Main layout ── */
+    main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      max-width: 1000px;
+      width: 100%;
+      align-items: center;
+    }
+
+    /* ── Left panel ── */
+    .hero-left .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.4);
+      color: #c4b5fd;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 50px;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-left h1 {
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+    }
+
+    .hero-left h1 span {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-left p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .feature-text strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .feature-text span {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ── Right panel (form card) ── */
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+    }
+
+    .form-card h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .form-card .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 28px;
+    }
+
+    /* ── Form elements ── */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 7px;
+      letter-spacing: 0.3px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    /* Amount with prefix */
+    .amount-wrap {
+      position: relative;
+    }
+
+    .amount-prefix {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .amount-wrap input {
+      padding-left: 30px;
+    }
+
+    /* ── Payment method cards ── */
+    .method-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 10px;
+      letter-spacing: 0.3px;
+    }
+
+    .method-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .method-card {
+      position: relative;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .method-card:hover {
+      border-color: rgba(124,58,237,0.5);
+      background: rgba(124,58,237,0.08);
+    }
+
+    .method-card.selected {
+      border-color: var(--primary);
+      background: rgba(124,58,237,0.15);
+    }
+
+    .method-card input[type="radio"] {
+      display: none;
+    }
+
+    .method-card .check {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      color: #fff;
+    }
+
+    .method-card.selected .check {
+      display: flex;
+    }
+
+    .method-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 6px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .dot-bkash  { background: var(--bkash); }
+    .dot-nagad  { background: var(--nagad); }
+    .dot-rocket { background: var(--rocket); }
+
+    .method-card span {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Pay button ── */
+    .btn-pay {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), #9333ea);
+      color: #fff;
+      font-family: "Inter", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(124,58,237,0.45);
+      transition: transform 0.18s, box-shadow 0.18s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-pay:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124,58,237,0.6);
+    }
+
+    .btn-pay:active { transform: translateY(0); }
+
+    .btn-pay:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .secure-note {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .secure-note span { color: var(--primary); font-weight: 600; }
+
+    /* ── Error box ── */
+    .error-box {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.4);
+      color: #fca5a5;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 24px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-credit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .footer-line {
+      flex: 1;
+      max-width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border));
+    }
+
+    .footer-line.right {
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    .footer-credit .dev-name {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .hero-left { text-align: center; }
+      .features { align-items: center; }
+      .feature-item { justify-content: center; }
+
+      .form-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav>
+  <div class="nav-logo">⚡ ZksiPay</div>
+  <div class="nav-badge">🔒 Secure Payment Portal</div>
+</nav>
+
+<!-- Main -->
+<main>
+  <div class="hero-grid">
+
+    <!-- Left: Hero -->
+    <div class="hero-left">
+      <div class="badge">✦ Trusted Payment Gateway</div>
+      <h1>Pay <span>Instant</span><br/>& Secure</h1>
+      <p>Fast, reliable mobile banking payments. Pay with bKash, Nagad, or Rocket in seconds.</p>
+
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-text">
+            <strong>Instant Processing</strong>
+            <span>Payments verified in real-time</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-text">
+            <strong>Bank-Grade Security</strong>
+            <span>256-bit encrypted transactions</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📱</div>
+          <div class="feature-text">
+            <strong>Mobile Banking</strong>
+            <span>bKash, Nagad & Rocket supported</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Form -->
+    <div class="form-card">
+      <h2>Complete Payment</h2>
+      <p class="subtitle">Fill in your details to proceed</p>
+
+      <div class="error-box" id="errorBox"></div>
+
+      <form id="checkoutForm">
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" placeholder="Enter your full name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="number">Number *</label>
+          <input type="text" id="number" placeholder="e.g. 01XXXXXXXXX" required />
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Amount *</label>
+          <div class="amount-wrap">
+            <span class="amount-prefix">৳</span>
+            <input type="number" id="amount" value="10" min="1" step="0.01" required />
+          </div>
+        </div>
+
+        <div class="method-label">Payment Method *</div>
+        <div class="method-cards">
+          <!-- bKash -->
+          <label class="method-card selected" id="card-bkash">
+            <input type="radio" name="method" value="bkash" checked />
+            <div class="check">✓</div>
+            <div class="method-dot dot-bkash">b</div>
+            <span>bKash</span>
+          </label>
+          <!-- Nagad -->
+          <label class="method-card" id="card-nagad">
+            <input type="radio" name="method" value="nagad" />
+            <div class="check">✓</div>
+            <div class="method-dot dot-nagad">N</div>
+            <span>Nagad</span>
+          </label>
+          <!-- Rocket -->
+          <label class="method-card" id="card-rocket">
+            <input type="radio" name="method" value="rocket" />
+            <div class="check">✓</div>
+            <div class="method-dot dot-rocket">R</div>
+            <span>Rocket</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-pay" id="payBtn">
+          Pay Now →
+        </button>
+      </form>
+
+      <p class="secure-note">🔐 Secured by <span>Zksipay</span></p>
+    </div>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-credit">
+    <div class="footer-line"></div>
+    <div>
+      Developed &amp; Designed by<br/>
+      <span class="dev-name">Mohammad Shoriful Islam</span>
+    </div>
+    <div class="footer-line right"></div>
+  </div>
+</footer>
+
+<script>
+  // ── Payment method card selection ──
+  document.querySelectorAll('.method-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+
+  // ── Form submit ──
+  document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const errorBox = document.getElementById('errorBox');
+    const payBtn   = document.getElementById('payBtn');
+
+    errorBox.style.display = 'none';
+
+    const name   = document.getElementById('name').value.trim();
+    const number = document.getElementById('number').value.trim();
+    const amount = document.getElementById('amount').value.trim();
+
+    if (!name || !number || !amount) {
+      errorBox.textContent = 'Please fill in all required fields.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    payBtn.disabled = true;
+    payBtn.textContent = 'Processing…';
+
+    try {
+      const res = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, number, amount }),
+      });
+
+      const data = await res.json();
+
+      if (data.payment_url) {
+        window.location.href = data.payment_url;
+      } else {
+        errorBox.textContent = data.error || 'Payment initiation failed. Try again.';
+        errorBox.style.display = 'block';
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay Now →';
+      }
+    } catch (err) {
+      errorBox.textContent = 'Network error. Please check your connection.';
+      errorBox.style.display = 'block';
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay Now →';
+    }
+  });
+</script>
+</body>
+</html>

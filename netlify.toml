@@ -1,0 +1,33 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/create-payment"
+  to = "/.netlify/functions/create-payment"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/verify-payment"
+  to = "/.netlify/functions/verify-payment"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/ipn"
+  to = "/.netlify/functions/ipn"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/login.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/dashboard"
+  to = "/admin/dashboard.html"
+  status = 200
+  force = true
