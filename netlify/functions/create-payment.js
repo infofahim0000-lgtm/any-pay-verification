@@ -1,6 +1,26 @@
-// netlify/functions/create-payment.js
-// Receives: { name, number, amount }
-// Calls epay checkout API and returns payment_url
+// এই line টা file এর উপরে add করো (axios এর পরে)
+const qs = require("querystring");
+
+// আগের এই অংশ:
+const response = await axios.post(
+  "https://epay.corp.com.bd/pay.php",
+  payload,
+  {
+    headers: { "Content-Type": "application/json" },
+    timeout: 15000,
+  }
+);
+
+// এভাবে বদলাও:
+const response = await axios.post(
+  "https://epay.corp.com.bd/pay.php",
+  qs.stringify(payload),
+  {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    timeout: 15000,
+  }
+);
+
 
 const axios = require("axios");
 
