@@ -1,28 +1,6 @@
-// এই line টা file এর উপরে add করো (axios এর পরে)
-const qs = require("querystring");
-
-// আগের এই অংশ:
-const response = await axios.post(
-  "https://epay.corp.com.bd/pay.php",
-  payload,
-  {
-    headers: { "Content-Type": "application/json" },
-    timeout: 15000,
-  }
-);
-
-// এভাবে বদলাও:
-const response = await axios.post(
-  "https://epay.corp.com.bd/pay.php",
-  qs.stringify(payload),
-  {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    timeout: 15000,
-  }
-);
-
-
+// netlify/functions/create-payment.js
 const axios = require("axios");
+const qs = require("querystring");
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -86,7 +64,7 @@ exports.handler = async (event) => {
     // --- Generate unique order ID ---
     const orderId = "ORD-" + Date.now();
 
-    // --- Build success URL with payer info as query params ---
+    // --- Build URLs ---
     const successUrl =
       `${YOUR_SITE}/verify.html` +
       `?name=${encodeURIComponent(name.trim())}` +
@@ -95,27 +73,27 @@ exports.handler = async (event) => {
       `&orderId=${encodeURIComponent(orderId)}`;
 
     const cancelUrl = `${YOUR_SITE}/cancel.html?reason=cancelled`;
-    const errorUrl = `${YOUR_SITE}/cancel.html?reason=payment_failed`;
+    const errorUrl  = `${YOUR_SITE}/cancel.html?reason=payment_failed`;
 
     // --- Checkout payload ---
     const payload = {
-      store_key: STORE_KEY,
-      amount: parsedAmount,
-      success_url: successUrl,
-      error_url: errorUrl,
-      cancel_url: cancelUrl,
-      order_id: orderId,
-      customer_name: name.trim(),
+      store_key:      STORE_KEY,
+      amount:         parsedAmount,
+      success_url:    successUrl,
+      error_url:      errorUrl,
+      cancel_url:     cancelUrl,
+      order_id:       orderId,
+      customer_name:  name.trim(),
       customer_email: "student@student.edu",
-      reference: number.trim(),
+      reference:      number.trim(),
     };
 
-    // --- Call epay checkout API ---
+    // --- Call epay API (form-encoded) ---
     const response = await axios.post(
       "https://epay.corp.com.bd/pay.php",
-      payload,
+      qs.stringify(payload),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         timeout: 15000,
       }
     );
@@ -128,7 +106,7 @@ exports.handler = async (event) => {
         headers: CORS_HEADERS,
         body: JSON.stringify({
           payment_url: data.payment_url,
-          order_id: data.order_id || orderId,
+          order_id:    data.order_id || orderId,
         }),
       };
     } else {
