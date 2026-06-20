@@ -1,5 +1,4 @@
 // netlify/functions/verify-payment.js
-// Direct save — no epay verify API call needed
 const admin = require("firebase-admin");
 
 const CORS_HEADERS = {
@@ -10,55 +9,88 @@ const CORS_HEADERS = {
 };
 
 function initFirebase() {
-  if (admin.apps.length > 0) return;
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
-  });
+  if (admin.apps.length > 0) {
+    console.log("Firebase already initialized");
+    return;
+  }
+
+  console.log("Initializing Firebase...");
+  console.log("DB URL:", process.env.FIREBASE_DATABASE_URL);
+  console.log("Service account exists:", !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: process.env.FIREBASE_DATABASE_URL,
+    });
+    console.log("Firebase initialized ✅");
+  } catch (e) {
+    console.error("Firebase init error:", e.message);
+    throw e;
+  }
 }
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS_HEADERS, body: "" };
   }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: "Method not allowed" }) };
+    return {
+      statusCode: 405,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
   }
 
   try {
     const body = JSON.parse(event.body || "{}");
     const { trxid, mfs, amount, name, number, orderId, status } = body;
 
-    console.log("Save request:", body);
+    console.log("=== Verify Request ===");
+    console.log("Body:", JSON.stringify(body));
 
-    // Validate required fields
+    // Validate
     if (!trxid || !trxid.trim()) {
-      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "TRX ID is required." }) };
-    }
-    if (!amount || isNaN(parseFloat(amount))) {
-      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Amount is required." }) };
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "TRX ID is required." }),
+      };
     }
 
-    // Only save if status is success
+    if (!amount || isNaN(parseFloat(amount))) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Amount is required." }),
+      };
+    }
+
     if (status !== "success") {
-      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Payment not successful." }) };
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: "Payment not successful." }),
+      };
     }
 
     const parsedAmount = parseFloat(amount);
     const cleanTrx     = trxid.trim().toUpperCase();
+    const invoiceId    = orderId || "ORD" + Date.now();
+    const safeKey      = invoiceId.replace(/[.#$[\]]/g, "_");
 
-    // Save to Firebase
+    console.log("Saving to Firebase key:", safeKey);
+
+    // Init Firebase
     initFirebase();
     const db = admin.database();
 
-    const invoiceId = orderId || "ORD" + Date.now();
-    const safeKey   = invoiceId.replace(/[.#$[\]]/g, "_");
-
-    // Check if already saved (prevent duplicate)
+    // Check duplicate
     const existing = await db.ref(`payments/${safeKey}`).once("value");
     if (existing.val()) {
-      console.log("Already saved:", safeKey);
+      console.log("Already exists, returning existing record");
       return {
         statusCode: 200,
         headers: CORS_HEADERS,
@@ -66,6 +98,7 @@ exports.handler = async (event) => {
       };
     }
 
+    // Build record
     const record = {
       name:          name   || "",
       number:        number || "",
@@ -77,8 +110,11 @@ exports.handler = async (event) => {
       status:        "COMPLETED",
     };
 
+    console.log("Record to save:", JSON.stringify(record));
+
+    // Save
     await db.ref(`payments/${safeKey}`).set(record);
-    console.log("✅ Saved:", safeKey);
+    console.log("✅ Saved to Firebase successfully!");
 
     return {
       statusCode: 200,
@@ -87,7 +123,8 @@ exports.handler = async (event) => {
     };
 
   } catch (err) {
-    console.error("Error:", err.message);
+    console.error("❌ Error:", err.message);
+    console.error("Stack:", err.stack);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
