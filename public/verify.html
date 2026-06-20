@@ -1,191 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verifying — ZksiPay</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --primary: #7c3aed;
-      --success: #10b981;
-      --danger: #ef4444;
-      --bg: #0f0a1e;
-      --card: #1e1540;
-      --border: rgba(124,58,237,0.25);
-      --text: #f1f0f5;
-      --muted: #9ca3af;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: "Inter", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-    }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse 70% 50% at 50% 30%, rgba(124,58,237,0.15) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .card {
-      position: relative;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 44px 36px;
-      width: 100%;
-      max-width: 460px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    .spinner {
-      width: 64px; height: 64px;
-      border: 4px solid rgba(124,58,237,0.2);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 24px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
-    .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
-    .error-box {
-      background: rgba(239,68,68,0.12);
-      border: 1px solid rgba(239,68,68,0.4);
-      color: #fca5a5;
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 0.85rem;
-      margin-bottom: 14px;
-      display: none;
-      text-align: left;
-    }
-    .manual-form { display: none; text-align: left; margin-top: 16px; }
-    .form-group { margin-bottom: 16px; }
-    label {
-      display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #c4b5fd;
-      margin-bottom: 7px;
-    }
-    select, input[type="text"] {
-      width: 100%;
-      background: rgba(255,255,255,0.05);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: "Inter", sans-serif;
-      font-size: 0.95rem;
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-    }
-    select:focus, input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
-    }
-    .btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, var(--primary), #9333ea);
-      color: #fff;
-      font-family: "Inter", sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      box-shadow: 0 8px 24px rgba(124,58,237,0.45);
-      transition: transform 0.18s;
-      margin-top: 4px;
-    }
-    .btn:hover { transform: translateY(-2px); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .btn-outline {
-      display: inline-block;
-      margin-top: 14px;
-      padding: 11px 28px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: var(--text);
-      border-radius: 10px;
-      font-family: "Inter", sans-serif;
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .btn-outline:hover { background: rgba(255,255,255,0.12); }
-    @media (max-width: 480px) { .card { padding: 32px 18px; } }
-  </style>
-</head>
-<body>
-<div class="card">
-
-  <!-- Loading State -->
-  <div id="stateLoading">
-    <div class="spinner"></div>
-    <h1>Verifying Payment…</h1>
-    <p class="subtitle">Please wait, checking your transaction</p>
-  </div>
-
-  <!-- Error / Manual State -->
-  <div id="stateError" style="display:none;">
-    <div style="font-size:2.5rem;margin-bottom:16px;">❌</div>
-    <h1 style="color:#ef4444;margin-bottom:8px;">Verification Failed</h1>
-    <p class="subtitle" id="errorMsg">Payment could not be verified.</p>
-
-    <div class="error-box" id="manualError"></div>
-
-    <div class="manual-form" id="manualForm">
-      <p style="color:var(--muted);font-size:0.83rem;margin-bottom:14px;">
-        নিচে manually TRX ID দিন:
-      </p>
-      <div class="form-group">
-        <label>Payment Method</label>
-        <select id="mfsSelect">
-          <option value="">— Select Method —</option>
-          <option value="bkash">bKash</option>
-          <option value="nagad">Nagad</option>
-          <option value="rocket">Rocket</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>TRX ID</label>
-        <input type="text" id="trxInput"
-               placeholder="e.g. DFK7ID2I65"
-               style="font-family:monospace;letter-spacing:1px;" />
-      </div>
-      <button class="btn" id="manualBtn" onclick="manualVerify()">
-        Verify Now
-      </button>
-    </div>
-
-    <br/>
-    <a href="/" class="btn-outline">← Back to Home</a>
-  </div>
-
-</div>
-
 <script>
-  // ── Fix double ? from epay ──
-  // URL example: /verify.html?n=X&o=Y?status=success&trxid=ABC
-  // Split on ALL ? and join with &
+  // Fix double ? from epay
   const fullUrl    = window.location.href;
-  const queryParts = fullUrl.split('?').slice(1); // everything after first ?
-  const queryStr   = queryParts.join('&');         // join multiple ? with &
+  const queryParts = fullUrl.split('?').slice(1);
+  const queryStr   = queryParts.join('&');
   const allParams  = new URLSearchParams(queryStr);
 
-  // Our params (short names)
+  // Our params
   const name    = allParams.get('n') || '';
   const number  = allParams.get('p') || '';
   const amount  = allParams.get('a') || '';
@@ -198,7 +18,6 @@
 
   console.log('Params:', { name, number, amount, orderId, status, trxid, gateway });
 
-  // Map gateway to mfs
   const mfsMap = {
     bkash: 'bkash', bKash: 'bkash',
     nagad: 'nagad',  Nagad: 'nagad',
@@ -206,43 +25,39 @@
   };
   const mfs = mfsMap[gateway] || 'bkash';
 
-  // ── Auto Verify ──
-  async function autoVerify(txid, method) {
+  // Auto save — no verify API needed
+  async function autoSave(txid, method) {
     try {
       const res = await fetch('/.netlify/functions/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trxid: txid,
-          mfs: method,
+          trxid:  txid,
+          mfs:    method,
           amount,
           name,
           number,
           orderId,
+          status: 'success', // epay confirmed success
         }),
       });
 
       const data = await res.json();
-      console.log('Verify response:', data);
+      console.log('Save response:', data);
 
       if (data.success) {
-        const q = new URLSearchParams({
-          name, number, amount,
-          trxId: txid,
-          method,
-          orderId,
-        });
+        const q = new URLSearchParams({ name, number, amount, trxId: txid, method, orderId });
         window.location.href = '/success.html?' + q.toString();
       } else {
-        showManualForm(data.error || 'Auto verification failed.');
+        showManualForm(data.error || 'Save failed.');
       }
     } catch (err) {
-      console.error('Auto verify error:', err);
-      showManualForm('Network error. Please verify manually.');
+      console.error('Save error:', err);
+      showManualForm('Network error.');
     }
   }
 
-  // ── Manual Verify ──
+  // Manual save
   async function manualVerify() {
     const btn    = document.getElementById('manualBtn');
     const errBox = document.getElementById('manualError');
@@ -250,78 +65,53 @@
     const txid   = document.getElementById('trxInput').value.trim();
 
     errBox.style.display = 'none';
-
-    if (!method) {
-      errBox.textContent = 'Payment method select করুন।';
-      errBox.style.display = 'block';
-      return;
-    }
-    if (!txid) {
-      errBox.textContent = 'TRX ID দিন।';
-      errBox.style.display = 'block';
-      return;
-    }
+    if (!method) { errBox.textContent = 'Payment method select করুন।'; errBox.style.display = 'block'; return; }
+    if (!txid)   { errBox.textContent = 'TRX ID দিন।'; errBox.style.display = 'block'; return; }
 
     btn.disabled = true;
-    btn.textContent = 'Verifying…';
+    btn.textContent = 'Saving…';
 
     try {
       const res = await fetch('/.netlify/functions/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trxid: txid,
-          mfs: method,
-          amount,
-          name,
-          number,
-          orderId,
+          trxid: txid, mfs: method, amount, name, number, orderId, status: 'success',
         }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        const q = new URLSearchParams({
-          name, number, amount,
-          trxId: txid,
-          method,
-          orderId,
-        });
+        const q = new URLSearchParams({ name, number, amount, trxId: txid, method, orderId });
         window.location.href = '/success.html?' + q.toString();
       } else {
-        errBox.textContent = data.error || 'Verification failed.';
+        errBox.textContent = data.error || 'Failed.';
         errBox.style.display = 'block';
         btn.disabled = false;
         btn.textContent = 'Verify Now';
       }
     } catch (err) {
-      errBox.textContent = 'Network error. Try again.';
+      errBox.textContent = 'Network error.';
       errBox.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'Verify Now';
     }
   }
 
-  // ── Show Manual Form ──
   function showManualForm(msg) {
     document.getElementById('stateLoading').style.display = 'none';
     document.getElementById('stateError').style.display   = 'block';
     document.getElementById('errorMsg').textContent = msg;
     document.getElementById('manualForm').style.display = 'block';
-    // Pre-fill if available
     if (trxid) document.getElementById('trxInput').value = trxid;
     if (mfs)   document.getElementById('mfsSelect').value = mfs;
   }
 
-  // ── Start ──
+  // Start — if epay says success, save directly
   if (status === 'success' && trxid) {
-    // epay gave us trxid — auto verify!
-    autoVerify(trxid, mfs);
+    autoSave(trxid, mfs);
   } else {
-    // No trxid — show manual form
     showManualForm('Payment info পাওয়া যায়নি। নিচে manually দিন।');
   }
 </script>
-</body>
-</html>
