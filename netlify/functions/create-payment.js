@@ -1,6 +1,6 @@
 // netlify/functions/create-payment.js
 const axios = require("axios");
-const qs = require("querystring");
+const qs    = require("querystring");
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +10,6 @@ const CORS_HEADERS = {
 };
 
 exports.handler = async (event) => {
-  // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS_HEADERS, body: "" };
   }
@@ -26,56 +25,42 @@ exports.handler = async (event) => {
   try {
     const { name, number, amount } = JSON.parse(event.body || "{}");
 
-    // --- Validate inputs ---
+    // Validate
     if (!name || !name.trim()) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Full name is required." }),
-      };
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Full name is required." }) };
     }
     if (!number || !number.trim()) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Number is required." }),
-      };
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Number is required." }) };
     }
     const parsedAmount = parseFloat(amount);
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Valid amount is required." }),
-      };
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Valid amount is required." }) };
     }
 
     const STORE_KEY = process.env.STORE_KEY;
     const YOUR_SITE = process.env.YOUR_SITE;
 
     if (!STORE_KEY || !YOUR_SITE) {
-      return {
-        statusCode: 500,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Server configuration error." }),
-      };
+      console.error("Missing env vars:", { STORE_KEY: !!STORE_KEY, YOUR_SITE: !!YOUR_SITE });
+      return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: "Server configuration error." }) };
     }
 
-    // --- Generate unique order ID ---
+    // Order ID without dash
     const orderId = "ORD" + Date.now();
 
+    // Simple success URL — put name/number/amount as hash so epay ? doesn't conflict
+    // epay appends ?status=...&trxid=... to success_url
+    // We store our data in the path using encoded params BEFORE epay adds theirs
+    // Solution: use a redirect page that reads both
+    const successUrl = `${YOUR_SITE}/verify.html` +
+      `?n=${encodeURIComponent(name.trim())}` +
+      `&p=${encodeURIComponent(number.trim())}` +
+      `&a=${encodeURIComponent(parsedAmount)}` +
+      `&o=${encodeURIComponent(orderId)}`;
 
-    // --- Build URLs ---
-    const customerData = Buffer.from(JSON.stringify({
-  name:   name.trim(),
-  number: number.trim(),
-  amount: parsedAmount,
-  orderId: orderId,
-})).toString('base64');
+    const cancelUrl = `${YOUR_SITE}/cancel.html?reason=cancelled`;
+    const errorUrl  = `${YOUR_SITE}/cancel.html?reason=payment_failed`;
 
-const successUrl = `${YOUR_SITE}/verify.html?d=${customerData}`;
-
-    // --- Checkout payload ---
     const payload = {
       store_key:      STORE_KEY,
       amount:         parsedAmount,
@@ -88,7 +73,8 @@ const successUrl = `${YOUR_SITE}/verify.html?d=${customerData}`;
       reference:      number.trim(),
     };
 
-    // --- Call epay API (form-encoded) ---
+    console.log("Sending to epay:", JSON.stringify(payload));
+
     const response = await axios.post(
       "https://epay.corp.com.bd/pay.php",
       qs.stringify(payload),
@@ -98,32 +84,31 @@ const successUrl = `${YOUR_SITE}/verify.html?d=${customerData}`;
       }
     );
 
+    console.log("epay response:", JSON.stringify(response.data));
+
     const data = response.data;
 
     if (data.status === "success" && data.payment_url) {
       return {
         statusCode: 200,
         headers: CORS_HEADERS,
-        body: JSON.stringify({
-          payment_url: data.payment_url,
-          order_id:    data.order_id || orderId,
-        }),
+        body: JSON.stringify({ payment_url: data.payment_url, order_id: data.order_id || orderId }),
       };
     } else {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({
-          error: data.message || "Failed to create payment. Try again.",
-        }),
+        body: JSON.stringify({ error: data.message || "Failed to create payment. Try again." }),
       };
     }
+
   } catch (err) {
     console.error("create-payment error:", err.message);
+    console.error("Stack:", err.stack);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ error: "Internal server error. Please retry." }),
+      body: JSON.stringify({ error: "Internal server error: " + err.message }),
     };
   }
 };
