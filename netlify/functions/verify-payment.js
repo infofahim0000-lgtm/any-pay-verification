@@ -1,7 +1,4 @@
 // netlify/functions/verify-payment.js
-// Called via POST fetch() from verify.html
-// Verifies TRX ID with epay, saves to Firebase on success
-
 const axios = require("axios");
 const admin = require("firebase-admin");
 
@@ -12,10 +9,8 @@ const CORS_HEADERS = {
   "Content-Type": "application/json",
 };
 
-// --- Initialize Firebase Admin (singleton) ---
 function initFirebase() {
-  if (admin.apps.length > 0) return; // already initialized
-
+  if (admin.apps.length > 0) return;
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -23,108 +18,137 @@ function initFirebase() {
   });
 }
 
+// Try verify with one mfs
+async function tryVerify(API_KEY, mfs, amount, trxid) {
+  const url = `https://epay.corp.com.bd/api.php` +
+    `?api_key=${encodeURIComponent(API_KEY)}` +
+    `&mfs=${encodeURIComponent(mfs)}` +
+    `&amount=${encodeURIComponent(amount)}` +
+    `&trxid=${encodeURIComponent(trxid)}`;
+
+  console.log(`Trying mfs=${mfs}:`, url);
+
+  const res  = await axios.get(url, { timeout: 10000 });
+  const data = res.data;
+  console.log(`Response mfs=${mfs}:`, JSON.stringify(data));
+  return data;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS_HEADERS, body: "" };
   }
-
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: CORS_HEADERS,
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
+    return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
   try {
-    const { trxid, mfs, amount, name, number, orderId } = JSON.parse(
-      event.body || "{}"
-    );
+    const body = JSON.parse(event.body || "{}");
+    const { trxid, mfs, amount, name, number, orderId } = body;
 
-    // --- Validate inputs ---
+    console.log("Verify request:", { trxid, mfs, amount, name, number, orderId });
+
     if (!trxid || !trxid.trim()) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "TRX ID is required." }),
-      };
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "TRX ID is required." }) };
     }
-    if (!["bkash", "nagad", "rocket"].includes(mfs)) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Invalid payment method." }),
-      };
-    }
+
     const parsedAmount = parseFloat(amount);
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Valid amount is required." }),
-      };
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Valid amount is required." }) };
     }
 
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
-      return {
-        statusCode: 500,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Server configuration error." }),
-      };
+      return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: "Server configuration error." }) };
     }
 
-    // --- Call epay verify API (GET with query params) ---
-    const verifyUrl = `https://epay.corp.com.bd/api.php` +
-      `?api_key=${encodeURIComponent(API_KEY)}` +
-      `&mfs=${encodeURIComponent(mfs)}` +
-      `&amount=${encodeURIComponent(parsedAmount)}` +
-      `&trxid=${encodeURIComponent(trxid.trim())}`;
+    // Try all 3 mfs methods — whichever works
+    const methodsToTry = [];
 
-    const verifyRes = await axios.get(verifyUrl, { timeout: 15000 });
-    const verifyData = verifyRes.data;
+    // Put the provided mfs first, then try others
+    if (mfs && ["bkash", "nagad", "rocket"].includes(mfs)) {
+      methodsToTry.push(mfs);
+    }
+    // Add remaining methods
+    for (const m of ["bkash", "nagad", "rocket"]) {
+      if (!methodsToTry.includes(m)) methodsToTry.push(m);
+    }
 
-    // --- Check verification result ---
-    if (verifyData.status === "success" && verifyData.verified === true) {
-      // --- Save to Firebase ---
-      initFirebase();
-      const db = admin.database();
+    let verifiedData = null;
+    let usedMfs      = mfs || "bkash";
 
-      // Safe Firebase key: replace forbidden chars
-      const invoiceId = orderId || "ORD-" + Date.now();
-      const safeKey = invoiceId.replace(/[.#$[\]]/g, "_");
+    for (const method of methodsToTry) {
+      try {
+        const data = await tryVerify(API_KEY, method, parsedAmount, trxid.trim());
+        if (data.status === "success" && data.verified === true) {
+          verifiedData = data;
+          usedMfs      = method;
+          console.log(`✅ Verified with mfs=${method}`);
+          break;
+        }
+      } catch (e) {
+        console.log(`mfs=${method} error:`, e.message);
+      }
+    }
 
-      const record = {
-        name: name || "",
-        number: number || "",
-        amount: parsedAmount,
-        trxId: trxid.trim(),
-        invoiceId: invoiceId,
-        paymentMethod: mfs,
-        timestamp: new Date().toISOString(),
-        status: "COMPLETED",
-      };
+    if (verifiedData) {
+      // Save to Firebase
+      try {
+        initFirebase();
+        const db = admin.database();
 
-      await db.ref(`payments/${safeKey}`).set(record);
+        const invoiceId = orderId || "ORD" + Date.now();
+        const safeKey   = invoiceId.replace(/[.#$[\]]/g, "_");
 
-      return {
-        statusCode: 200,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ success: true, record }),
-      };
+        const record = {
+          name:          name   || "",
+          number:        number || "",
+          amount:        parsedAmount,
+          trxId:         trxid.trim(),
+          invoiceId:     invoiceId,
+          paymentMethod: usedMfs,
+          timestamp:     new Date().toISOString(),
+          status:        "COMPLETED",
+        };
+
+        await db.ref(`payments/${safeKey}`).set(record);
+        console.log("✅ Saved to Firebase:", safeKey);
+
+        return {
+          statusCode: 200,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ success: true, record }),
+        };
+
+      } catch (fbErr) {
+        console.error("Firebase error:", fbErr.message);
+        return {
+          statusCode: 200,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({
+            success: true,
+            warning: "Verified but save failed.",
+            record: { name, number, amount: parsedAmount, trxId: trxid.trim(), paymentMethod: usedMfs },
+          }),
+        };
+      }
+
     } else {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: "Payment verification failed. Check your TRX ID and try again." }),
+        body: JSON.stringify({
+          error: "Payment verification failed. TRX ID টি সঠিক কিনা এবং amount মিলছে কিনা চেক করুন।",
+        }),
       };
     }
+
   } catch (err) {
     console.error("verify-payment error:", err.message);
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ error: "Internal server error. Please retry." }),
+      body: JSON.stringify({ error: "Internal server error: " + err.message }),
     };
   }
 };
