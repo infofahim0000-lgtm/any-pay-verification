@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Payment Successful — ZksiPay</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -12,14 +11,10 @@
       --success: #10b981;
       --bg: #0f0a1e;
       --card: #1e1540;
-      --border: rgba(124,58,237,0.25);
       --text: #f1f0f5;
       --muted: #9ca3af;
-      --radius: 16px;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: "Inter", sans-serif;
       background: var(--bg);
@@ -30,7 +25,6 @@
       justify-content: center;
       padding: 24px 16px;
     }
-
     body::before {
       content: "";
       position: fixed;
@@ -38,82 +32,62 @@
       background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(16,185,129,0.1) 0%, transparent 60%);
       pointer-events: none;
     }
-
     .card {
       position: relative;
       background: var(--card);
       border: 1px solid rgba(16,185,129,0.3);
-      border-radius: var(--radius);
-      padding: 44px 36px;
+      border-radius: 20px;
+      padding: 48px 36px;
       width: 100%;
       max-width: 460px;
       text-align: center;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
-
-    /* Animated checkmark */
     .check-circle {
-      width: 80px;
-      height: 80px;
+      width: 88px; height: 88px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--success), #34d399);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 24px;
-      font-size: 2.2rem;
-      box-shadow: 0 0 40px rgba(16,185,129,0.4);
-      animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      margin: 0 auto 20px;
+      font-size: 2.6rem;
+      box-shadow: 0 0 50px rgba(16,185,129,0.4);
+      animation: pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
     }
-
-    @keyframes pop {
-      0%   { transform: scale(0); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 800;
-      margin-bottom: 8px;
-      color: var(--success);
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.88rem;
-      margin-bottom: 28px;
-    }
-
-    /* Detail box */
+    @keyframes pop { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    h1 { font-size: 1.8rem; font-weight: 800; color: var(--success); margin-bottom: 8px; }
+    .subtitle { color: var(--muted); font-size: 0.85rem; line-height: 1.6; margin-bottom: 28px; }
     .detail-box {
       background: rgba(16,185,129,0.06);
       border: 1px solid rgba(16,185,129,0.2);
-      border-radius: 12px;
-      padding: 18px;
+      border-radius: 14px;
+      padding: 6px 0;
       margin-bottom: 28px;
       text-align: left;
     }
-
     .detail-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
-      font-size: 0.88rem;
+      padding: 13px 20px;
+      font-size: 0.9rem;
     }
-
-    .detail-row:not(:last-child) {
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+    .detail-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .detail-row .key { color: var(--muted); font-weight: 500; }
+    .detail-row .val { font-weight: 700; color: var(--text); }
+    .detail-row .val.amount { color: #34d399; font-size: 1.1rem; }
+    .detail-row .val.trx {
+      font-family: "Courier New", monospace;
+      font-size: 0.82rem;
+      color: #a78bfa;
+      background: rgba(124,58,237,0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
     }
-
-    .detail-row .key { color: var(--muted); }
-    .detail-row .val { font-weight: 600; }
-    .detail-row .val.amount { color: #34d399; font-size: 1.05rem; }
-    .detail-row .val.trx { font-family: "Courier New", monospace; font-size: 0.82rem; color: #a78bfa; }
-
     .btn-home {
       display: inline-block;
-      padding: 13px 32px;
+      padding: 14px 36px;
       background: linear-gradient(135deg, var(--primary), #9333ea);
       color: #fff;
       font-family: "Inter", sans-serif;
@@ -126,23 +100,15 @@
       box-shadow: 0 8px 24px rgba(124,58,237,0.4);
       transition: transform 0.18s, box-shadow 0.18s;
     }
-
-    .btn-home:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 32px rgba(124,58,237,0.6);
-    }
-
-    @media (max-width: 480px) {
-      .card { padding: 32px 18px; }
-    }
+    .btn-home:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(124,58,237,0.6); }
+    @media (max-width: 480px) { .card { padding: 32px 18px; } }
   </style>
 </head>
 <body>
-
 <div class="card">
-  <div class="check-circle">✓</div>
+  <div class="check-circle">✅</div>
   <h1>Payment Successful!</h1>
-  <p class="subtitle">Your transaction has been verified and recorded.</p>
+  <p class="subtitle">Your payment has been verified and recorded.<br/>Please save your TRX ID for reference.</p>
 
   <div class="detail-box">
     <div class="detail-row">
@@ -154,16 +120,12 @@
       <span class="val" id="dNumber">—</span>
     </div>
     <div class="detail-row">
-      <span class="key">Amount</span>
+      <span class="key">Amount Paid</span>
       <span class="val amount" id="dAmount">—</span>
     </div>
     <div class="detail-row">
       <span class="key">TRX ID</span>
       <span class="val trx" id="dTrx">—</span>
-    </div>
-    <div class="detail-row">
-      <span class="key">Method</span>
-      <span class="val" id="dMethod">—</span>
     </div>
   </div>
 
@@ -172,14 +134,10 @@
 
 <script>
   const p = new URLSearchParams(window.location.search);
-
   document.getElementById('dName').textContent   = p.get('name')   || '—';
   document.getElementById('dNumber').textContent = p.get('number') || '—';
-  document.getElementById('dAmount').textContent = p.get('amount') ? '৳' + parseFloat(p.get('amount')).toFixed(2) : '—';
+  document.getElementById('dAmount').textContent = p.get('amount') ? '৳ ' + parseFloat(p.get('amount')).toFixed(2) : '—';
   document.getElementById('dTrx').textContent    = p.get('trxId')  || '—';
-
-  const methodMap = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket' };
-  document.getElementById('dMethod').textContent = methodMap[p.get('method')] || p.get('method') || '—';
 </script>
 </body>
 </html>
