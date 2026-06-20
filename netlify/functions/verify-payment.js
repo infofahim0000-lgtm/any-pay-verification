@@ -18,20 +18,18 @@ function initFirebase() {
   });
 }
 
-// Try verify with one mfs
-async function tryVerify(API_KEY, mfs, amount, trxid) {
+// Try one specific combination
+async function tryOne(API_KEY, mfs, amount, trxid) {
   const url = `https://epay.corp.com.bd/api.php` +
     `?api_key=${encodeURIComponent(API_KEY)}` +
     `&mfs=${encodeURIComponent(mfs)}` +
     `&amount=${encodeURIComponent(amount)}` +
     `&trxid=${encodeURIComponent(trxid)}`;
 
-  console.log(`Trying mfs=${mfs}:`, url);
-
+  console.log(`Trying: mfs=${mfs} amount=${amount} trxid=${trxid}`);
   const res  = await axios.get(url, { timeout: 10000 });
-  const data = res.data;
-  console.log(`Response mfs=${mfs}:`, JSON.stringify(data));
-  return data;
+  console.log(`Result: ${JSON.stringify(res.data)}`);
+  return res.data;
 }
 
 exports.handler = async (event) => {
@@ -46,7 +44,7 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || "{}");
     const { trxid, mfs, amount, name, number, orderId } = body;
 
-    console.log("Verify request:", { trxid, mfs, amount, name, number, orderId });
+    console.log("=== Verify Request ===", { trxid, mfs, amount, name, number, orderId });
 
     if (!trxid || !trxid.trim()) {
       return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "TRX ID is required." }) };
@@ -62,32 +60,43 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: "Server configuration error." }) };
     }
 
-    // Try all 3 mfs methods — whichever works
-    const methodsToTry = [];
+    const cleanTrx    = trxid.trim().toUpperCase();
+    const amountInt   = Math.round(parsedAmount);
+    const amountFloat = parsedAmount.toFixed(2);
+    const methods     = ["bkash", "nagad", "rocket"];
 
-    // Put the provided mfs first, then try others
-    if (mfs && ["bkash", "nagad", "rocket"].includes(mfs)) {
-      methodsToTry.push(mfs);
+    // Build all combinations to try
+    // mfs × amount format = 3 × 2 = 6 combinations
+    const combinations = [];
+
+    // Put user-selected mfs first
+    if (mfs && methods.includes(mfs)) {
+      combinations.push({ mfs, amount: amountInt });
+      combinations.push({ mfs, amount: amountFloat });
     }
-    // Add remaining methods
-    for (const m of ["bkash", "nagad", "rocket"]) {
-      if (!methodsToTry.includes(m)) methodsToTry.push(m);
+
+    // Then try all others
+    for (const m of methods) {
+      if (m !== mfs) {
+        combinations.push({ mfs: m, amount: amountInt });
+        combinations.push({ mfs: m, amount: amountFloat });
+      }
     }
 
     let verifiedData = null;
     let usedMfs      = mfs || "bkash";
 
-    for (const method of methodsToTry) {
+    for (const combo of combinations) {
       try {
-        const data = await tryVerify(API_KEY, method, parsedAmount, trxid.trim());
+        const data = await tryOne(API_KEY, combo.mfs, combo.amount, cleanTrx);
         if (data.status === "success" && data.verified === true) {
           verifiedData = data;
-          usedMfs      = method;
-          console.log(`✅ Verified with mfs=${method}`);
+          usedMfs      = combo.mfs;
+          console.log(`✅ SUCCESS with mfs=${combo.mfs} amount=${combo.amount}`);
           break;
         }
       } catch (e) {
-        console.log(`mfs=${method} error:`, e.message);
+        console.log(`❌ Failed mfs=${combo.mfs} amount=${combo.amount}:`, e.message);
       }
     }
 
@@ -104,7 +113,7 @@ exports.handler = async (event) => {
           name:          name   || "",
           number:        number || "",
           amount:        parsedAmount,
-          trxId:         trxid.trim(),
+          trxId:         cleanTrx,
           invoiceId:     invoiceId,
           paymentMethod: usedMfs,
           timestamp:     new Date().toISOString(),
@@ -121,24 +130,30 @@ exports.handler = async (event) => {
         };
 
       } catch (fbErr) {
-        console.error("Firebase error:", fbErr.message);
+        console.error("Firebase save error:", fbErr.message);
+        // Payment verified — return success even if Firebase failed
         return {
           statusCode: 200,
           headers: CORS_HEADERS,
           body: JSON.stringify({
             success: true,
-            warning: "Verified but save failed.",
-            record: { name, number, amount: parsedAmount, trxId: trxid.trim(), paymentMethod: usedMfs },
+            record: {
+              name, number,
+              amount: parsedAmount,
+              trxId: cleanTrx,
+              paymentMethod: usedMfs,
+            },
           }),
         };
       }
 
     } else {
+      console.log("❌ All combinations failed");
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: "Payment verification failed. TRX ID টি সঠিক কিনা এবং amount মিলছে কিনা চেক করুন।",
+          error: "Payment verification failed. TRX ID বা Amount সঠিক নয়।",
         }),
       };
     }
