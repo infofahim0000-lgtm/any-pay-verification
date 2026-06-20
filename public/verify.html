@@ -1,44 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verifying — ZksiPay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #7c3aed;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #0f0a1e;
+      --card: #1e1540;
+      --border: rgba(124,58,237,0.25);
+      --text: #f1f0f5;
+      --muted: #9ca3af;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 50% at 50% 30%, rgba(124,58,237,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .card {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 44px 36px;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .spinner {
+      width: 64px; height: 64px;
+      border: 4px solid rgba(124,58,237,0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
+    .error-box {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.4);
+      color: #fca5a5;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      display: none;
+      text-align: left;
+    }
+    .manual-form { display: none; text-align: left; margin-top: 16px; }
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 7px;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    select:focus, input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), #9333ea);
+      color: #fff;
+      font-family: "Inter", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(124,58,237,0.45);
+      transition: transform 0.18s;
+      margin-top: 4px;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-outline {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 11px 28px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+      border-radius: 10px;
+      font-family: "Inter", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.12); }
+    @media (max-width: 480px) { .card { padding: 32px 18px; } }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Loading -->
+  <div id="stateLoading">
+    <div class="spinner"></div>
+    <h1>Verifying Payment…</h1>
+    <p class="subtitle">Please wait, checking your transaction</p>
+  </div>
+
+  <!-- Error + Manual -->
+  <div id="stateError" style="display:none;">
+    <div style="font-size:2.5rem;margin-bottom:16px;">❌</div>
+    <h1 style="color:#ef4444;margin-bottom:8px;">Verification Failed</h1>
+    <p id="errorMsg" class="subtitle">Payment could not be verified.</p>
+    <div id="manualError" class="error-box"></div>
+    <div id="manualForm" class="manual-form">
+      <p style="color:var(--muted);font-size:0.83rem;margin-bottom:14px;">
+        নিচে manually TRX ID দিন:
+      </p>
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="mfsSelect">
+          <option value="">— Select Method —</option>
+          <option value="bkash">bKash</option>
+          <option value="nagad">Nagad</option>
+          <option value="rocket">Rocket</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>TRX ID</label>
+        <input type="text" id="trxInput"
+               placeholder="e.g. DFK7ID2I65"
+               style="font-family:monospace;letter-spacing:1px;" />
+      </div>
+      <button class="btn" id="manualBtn" onclick="manualVerify()">
+        Verify Now
+      </button>
+    </div>
+    <br/>
+    <a href="/" class="btn-outline">← Back to Home</a>
+  </div>
+
+</div>
+
 <script>
-  // Fix double ? from epay
+  // ── Parse URL (fix double ? from epay) ──
   const fullUrl    = window.location.href;
   const queryParts = fullUrl.split('?').slice(1);
   const queryStr   = queryParts.join('&');
   const allParams  = new URLSearchParams(queryStr);
 
-  // Our params
   const name    = allParams.get('n') || '';
   const number  = allParams.get('p') || '';
   const amount  = allParams.get('a') || '';
   const orderId = allParams.get('o') || allParams.get('order_id') || '';
-
-  // epay params
   const status  = allParams.get('status')  || '';
   const trxid   = allParams.get('trxid')   || '';
   const gateway = allParams.get('gateway') || '';
 
-  console.log('Params:', { name, number, amount, orderId, status, trxid, gateway });
+  console.log('URL Params:', { name, number, amount, orderId, status, trxid, gateway });
 
   const mfsMap = {
-    bkash: 'bkash', bKash: 'bkash',
-    nagad: 'nagad',  Nagad: 'nagad',
-    rocket: 'rocket', Rocket: 'rocket'
+    bkash:'bkash', bKash:'bkash',
+    nagad:'nagad', Nagad:'nagad',
+    rocket:'rocket', Rocket:'rocket'
   };
   const mfs = mfsMap[gateway] || 'bkash';
 
-  // Auto save — no verify API needed
+  // ── Show Manual Form ──
+  function showManualForm(msg) {
+    var loading = document.getElementById('stateLoading');
+    var error   = document.getElementById('stateError');
+    var errMsg  = document.getElementById('errorMsg');
+    var form    = document.getElementById('manualForm');
+    var trxInp  = document.getElementById('trxInput');
+    var mfsSel  = document.getElementById('mfsSelect');
+
+    if (loading) loading.style.display = 'none';
+    if (error)   error.style.display   = 'block';
+    if (errMsg)  errMsg.textContent    = msg || 'Verification failed.';
+    if (form)    form.style.display    = 'block';
+    if (trxid && trxInp) trxInp.value = trxid;
+    if (mfs   && mfsSel) mfsSel.value = mfs;
+  }
+
+  // ── Auto Save ──
   async function autoSave(txid, method) {
     try {
       const res = await fetch('/.netlify/functions/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trxid:  txid,
-          mfs:    method,
-          amount,
-          name,
-          number,
-          orderId,
-          status: 'success', // epay confirmed success
+          trxid:   txid,
+          mfs:     method,
+          amount:  amount,
+          name:    name,
+          number:  number,
+          orderId: orderId,
+          status:  'success',
         }),
       });
 
@@ -46,29 +235,43 @@
       console.log('Save response:', data);
 
       if (data.success) {
-        const q = new URLSearchParams({ name, number, amount, trxId: txid, method, orderId });
+        const q = new URLSearchParams({
+          name, number, amount,
+          trxId: txid,
+          method: method,
+          orderId: orderId,
+        });
         window.location.href = '/success.html?' + q.toString();
       } else {
-        showManualForm(data.error || 'Save failed.');
+        showManualForm(data.error || 'Save failed. Try manually.');
       }
     } catch (err) {
-      console.error('Save error:', err);
-      showManualForm('Network error.');
+      console.error('Auto save error:', err);
+      showManualForm('Network error. Try manually.');
     }
   }
 
-  // Manual save
+  // ── Manual Verify ──
   async function manualVerify() {
-    const btn    = document.getElementById('manualBtn');
-    const errBox = document.getElementById('manualError');
-    const method = document.getElementById('mfsSelect').value;
-    const txid   = document.getElementById('trxInput').value.trim();
+    var btn    = document.getElementById('manualBtn');
+    var errBox = document.getElementById('manualError');
+    var method = document.getElementById('mfsSelect').value;
+    var txid   = document.getElementById('trxInput').value.trim();
 
     errBox.style.display = 'none';
-    if (!method) { errBox.textContent = 'Payment method select করুন।'; errBox.style.display = 'block'; return; }
-    if (!txid)   { errBox.textContent = 'TRX ID দিন।'; errBox.style.display = 'block'; return; }
 
-    btn.disabled = true;
+    if (!method) {
+      errBox.textContent   = 'Payment method select করুন।';
+      errBox.style.display = 'block';
+      return;
+    }
+    if (!txid) {
+      errBox.textContent   = 'TRX ID দিন।';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    btn.disabled    = true;
     btn.textContent = 'Saving…';
 
     try {
@@ -76,42 +279,50 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trxid: txid, mfs: method, amount, name, number, orderId, status: 'success',
+          trxid:   txid,
+          mfs:     method,
+          amount:  amount,
+          name:    name,
+          number:  number,
+          orderId: orderId,
+          status:  'success',
         }),
       });
 
       const data = await res.json();
+      console.log('Manual save response:', data);
 
       if (data.success) {
-        const q = new URLSearchParams({ name, number, amount, trxId: txid, method, orderId });
+        const q = new URLSearchParams({
+          name, number, amount,
+          trxId: txid,
+          method: method,
+          orderId: orderId,
+        });
         window.location.href = '/success.html?' + q.toString();
       } else {
-        errBox.textContent = data.error || 'Failed.';
+        errBox.textContent   = data.error || 'Failed. Try again.';
         errBox.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = 'Verify Now';
+        btn.disabled         = false;
+        btn.textContent      = 'Verify Now';
       }
     } catch (err) {
-      errBox.textContent = 'Network error.';
+      errBox.textContent   = 'Network error. Try again.';
       errBox.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Verify Now';
+      btn.disabled         = false;
+      btn.textContent      = 'Verify Now';
     }
   }
 
-  function showManualForm(msg) {
-    document.getElementById('stateLoading').style.display = 'none';
-    document.getElementById('stateError').style.display   = 'block';
-    document.getElementById('errorMsg').textContent = msg;
-    document.getElementById('manualForm').style.display = 'block';
-    if (trxid) document.getElementById('trxInput').value = trxid;
-    if (mfs)   document.getElementById('mfsSelect').value = mfs;
-  }
-
-  // Start — if epay says success, save directly
-  if (status === 'success' && trxid) {
-    autoSave(trxid, mfs);
-  } else {
-    showManualForm('Payment info পাওয়া যায়নি। নিচে manually দিন।');
-  }
+  // ── Start ──
+  window.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM ready, status:', status, 'trxid:', trxid);
+    if (status === 'success' && trxid) {
+      autoSave(trxid, mfs);
+    } else {
+      showManualForm('Payment info পাওয়া যায়নি। নিচে manually দিন।');
+    }
+  });
 </script>
+</body>
+</html>
