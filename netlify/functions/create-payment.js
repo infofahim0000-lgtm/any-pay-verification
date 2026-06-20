@@ -66,15 +66,14 @@ exports.handler = async (event) => {
 
 
     // --- Build URLs ---
-    const successUrl =
-      `${YOUR_SITE}/verify.html` +
-      `?name=${encodeURIComponent(name.trim())}` +
-      `&number=${encodeURIComponent(number.trim())}` +
-      `&amount=${encodeURIComponent(parsedAmount)}` +
-      `&orderId=${encodeURIComponent(orderId)}`;
+    const customerData = Buffer.from(JSON.stringify({
+  name:   name.trim(),
+  number: number.trim(),
+  amount: parsedAmount,
+  orderId: orderId,
+})).toString('base64');
 
-    const cancelUrl = `${YOUR_SITE}/cancel.html?reason=cancelled`;
-    const errorUrl  = `${YOUR_SITE}/cancel.html?reason=payment_failed`;
+const successUrl = `${YOUR_SITE}/verify.html?d=${customerData}`;
 
     // --- Checkout payload ---
     const payload = {

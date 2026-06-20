@@ -156,32 +156,35 @@
 </div>
 
 <script>
-  // ── Parse URL — handle double ? from epay ──
-  // epay appends: ?status=success&trxid=XXX to our URL which already has ?
-  // Result: /verify.html?name=X&orderId=Y?status=success&trxid=XXX
-  // Fix: replace second ? with &
+  // ── Parse URL ──
+  const fullUrl    = window.location.href;
+  const allParams  = new URLSearchParams(fullUrl.split('?').slice(1).join('&'));
 
-  const rawSearch = window.location.search +
-    (window.location.href.includes('?') ?
-      window.location.href.split('?').slice(2).map(s => '&' + s).join('') : '');
+  // epay params
+  const status  = allParams.get('status') || '';
+  const trxid   = allParams.get('trxid')  || '';
+  const gateway = allParams.get('gateway') || 'bkash';
 
-  // Better approach: parse full URL manually
-  const fullUrl   = window.location.href;
-  const allParams = new URLSearchParams(fullUrl.split('?').slice(1).join('&'));
+  // Our customer data (base64 encoded)
+  let name = '', number = '', amount = '', orderId = '';
+  try {
+    const d = allParams.get('d') || '';
+    if (d) {
+      const decoded = JSON.parse(atob(d));
+      name    = decoded.name    || '';
+      number  = decoded.number  || '';
+      amount  = decoded.amount  || '';
+      orderId = decoded.orderId || '';
+    }
+  } catch(e) {
+    console.log('Decode error:', e);
+  }
 
-  const name     = allParams.get('name')     || '';
-  const number   = allParams.get('number')   || '';
-  const amount   = allParams.get('amount')   || '';
-  const orderId  = allParams.get('orderId')  || allParams.get('order_id') || '';
-  const status   = allParams.get('status')   || '';
-  const trxid    = allParams.get('trxid')    || '';
-  const gateway  = allParams.get('gateway')  || 'bkash';
-
-  console.log('Parsed params:', { name, number, amount, orderId, status, trxid, gateway });
+  console.log('Parsed:', { name, number, amount, orderId, status, trxid, gateway });
 
   const mfsMap = {
     bkash: 'bkash', bKash: 'bkash',
-    nagad: 'nagad', Nagad: 'nagad',
+    nagad: 'nagad',  Nagad: 'nagad',
     rocket: 'rocket', Rocket: 'rocket'
   };
   const mfs = mfsMap[gateway] || 'bkash';
@@ -194,10 +197,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trxid: txid, mfs: method, amount, name, number, orderId }),
       });
-
       const data = await res.json();
-      console.log('Verify response:', data);
-
       if (data.success) {
         const q = new URLSearchParams({ name, number, amount, trxId: txid, method, orderId });
         window.location.href = '/success.html?' + q.toString();
@@ -229,9 +229,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trxid: txid, mfs: method, amount, name, number, orderId }),
       });
-
       const data = await res.json();
-
       if (data.success) {
         const q = new URLSearchParams({ name, number, amount, trxId: txid, method, orderId });
         window.location.href = '/success.html?' + q.toString();
@@ -266,5 +264,6 @@
     showManualForm('Payment info পাওয়া যায়নি। নিচে manually দিন।');
   }
 </script>
+
 </body>
 </html>
